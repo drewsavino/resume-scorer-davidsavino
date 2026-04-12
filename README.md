@@ -1,7 +1,5 @@
 # Resume Scorer
 
-A rule-based resume scoring tool built with Python (now JavaScript on the backend) and deployed as a static site on Netlify. No AI API, no database, no login — just paste your resume and get a detailed breakdown in seconds.
-
 I built this because most resume feedback tools either cost money, require an account, or give vague advice that isn't actually useful. This one runs entirely server-side, is free to use, and gives you specific, actionable recommendations.
 
 ---
