@@ -1,0 +1,25 @@
+# netlify.toml
+# Tells Netlify where to find the static site and the JS serverless function.
+
+[build]
+  # The folder containing index.html (your frontend)
+  publish = "static"
+
+  # No build command needed — static HTML + JS serverless function only
+  command = ""
+
+[functions]
+  # Where Netlify looks for serverless functions
+  directory = "netlify/functions"
+
+# Route all /api/* requests to the JS serverless function
+[[redirects]]
+  from   = "/api/*"
+  to     = "/.netlify/functions/api/:splat"
+  status = 200
+
+# Fallback: serve index.html for all other routes (SPA behaviour)
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200

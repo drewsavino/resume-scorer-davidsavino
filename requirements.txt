@@ -1,0 +1,7 @@
+# requirements.txt
+# scorer.py uses only Python standard library modules (re, json, os, sys)
+# so there are no third-party dependencies to install.
+#
+# If you later add AI API calls (e.g. OpenAI or Anthropic), add them here:
+#   openai==1.30.0
+#   anthropic==0.28.0

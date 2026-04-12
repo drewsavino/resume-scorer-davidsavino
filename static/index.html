@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resume Scorer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F7F6F2; --surface: #FFFFFF; --dark: #1A1A18; --mid: #3D3D38;
+    --muted: #7A7A72; --border: #E2E0D8; --accent: #2D5BE3; --accent-light: #EEF2FD;
+    --green: #16A34A; --green-bg: #F0FDF4; --amber: #D97706; --amber-bg: #FFFBEB;
+    --red: #DC2626; --red-bg: #FEF2F2; --radius: 10px; --radius-lg: 16px;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--dark); min-height: 100vh; font-size: 15px; line-height: 1.6; }
+  header { background: var(--dark); color: #fff; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
+  .logo { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; letter-spacing: 0.04em; display: flex; align-items: center; gap: 10px; }
+  .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; }
+  .header-tag { font-family: 'DM Mono', monospace; font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 0.08em; }
+  .header-author { font-family: 'DM Mono', monospace; font-size: 11px; color: rgba(255,255,255,0.45); letter-spacing: 0.06em; margin-left: 14px; padding-left: 14px; border-left: 1px solid rgba(255,255,255,0.15); }
+  .page { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+  .hero { margin-bottom: 2.5rem; }
+  .hero h1 { font-size: 2.2rem; font-weight: 600; line-height: 1.2; margin-bottom: 0.5rem; letter-spacing: -0.02em; }
+  .hero p { color: var(--muted); font-size: 15px; }
+  .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+  @media (max-width: 700px) { .input-grid { grid-template-columns: 1fr; } }
+  .input-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; }
+  .input-card label { display: block; font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.6rem; }
+  .input-card textarea { width: 100%; height: 220px; border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--dark); background: var(--bg); resize: vertical; outline: none; transition: border-color 0.2s; line-height: 1.6; }
+  .input-card textarea:focus { border-color: var(--accent); }
+  .input-card textarea::placeholder { color: var(--muted); font-style: italic; }
+  .controls-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem; }
+  .select-wrap { display: flex; align-items: center; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0 1rem; height: 46px; }
+  .select-wrap label { font-size: 12px; color: var(--muted); white-space: nowrap; font-weight: 500; }
+  .select-wrap select { border: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--dark); outline: none; cursor: pointer; }
+  .analyze-btn { display: flex; align-items: center; gap: 8px; background: var(--dark); color: #fff; border: none; border-radius: var(--radius); padding: 0 1.5rem; height: 46px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; transition: background 0.2s, transform 0.1s; white-space: nowrap; }
+  .analyze-btn:hover { background: var(--accent); }
+  .analyze-btn:active { transform: scale(0.98); }
+  .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .clear-btn { background: transparent; border: 1px solid var(--border); border-radius: var(--radius); padding: 0 1rem; height: 46px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--muted); cursor: pointer; transition: border-color 0.2s, color 0.2s; }
+  .clear-btn:hover { border-color: var(--mid); color: var(--dark); }
+  #loading { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2.5rem; text-align: center; margin-bottom: 2rem; }
+  .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 1rem; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loading-msg { font-size: 14px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  #results { display: none; }
+  .dashboard { background: var(--dark); color: #fff; border-radius: var(--radius-lg); padding: 2rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: auto 1fr; gap: 2rem; align-items: center; }
+  @media (max-width: 600px) { .dashboard { grid-template-columns: 1fr; text-align: center; } }
+  .score-circle-wrap { position: relative; width: 130px; height: 130px; flex-shrink: 0; }
+  .score-circle-wrap svg { transform: rotate(-90deg); }
+  .score-circle-track { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 8; }
+  .score-circle-fill { fill: none; stroke-width: 8; stroke-linecap: round; }
+  .score-circle-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+  .score-number { font-size: 2rem; font-weight: 600; line-height: 1; }
+  .score-label { font-size: 11px; color: rgba(255,255,255,0.5); font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .dashboard-right h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 0.4rem; }
+  .dashboard-right p { font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.65; margin-bottom: 1rem; }
+  .mini-bars { display: flex; flex-wrap: wrap; gap: 8px; }
+  .mini-bar-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgba(255,255,255,0.6); }
+  .mini-bar { width: 60px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; }
+  .mini-bar-fill { height: 100%; border-radius: 2px; }
+  .section-title { font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 2rem 0 0.75rem; }
+  .categories-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+  .cat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .cat-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; cursor: pointer; user-select: none; transition: background 0.15s; }
+  .cat-header:hover { background: var(--bg); }
+  .cat-header-left { display: flex; align-items: center; gap: 10px; }
+  .cat-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+  .cat-name { font-weight: 500; font-size: 14px; }
+  .cat-weight { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .score-badge { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; padding: 3px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+  .badge-green { background: var(--green-bg); color: var(--green); }
+  .badge-amber { background: var(--amber-bg); color: var(--amber); }
+  .badge-red { background: var(--red-bg); color: var(--red); }
+  .chevron { font-size: 12px; color: var(--muted); margin-left: 8px; transition: transform 0.2s; }
+  .cat-card.open .chevron { transform: rotate(180deg); }
+  .cat-body { display: none; padding: 0 1.25rem 1.25rem; border-top: 1px solid var(--border); }
+  .cat-card.open .cat-body { display: block; }
+  .cat-score-bar { height: 4px; background: var(--border); border-radius: 2px; margin: 1rem 0; overflow: hidden; }
+  .cat-score-bar-fill { height: 100%; border-radius: 2px; }
+  .fill-green { background: var(--green); } .fill-amber { background: var(--amber); } .fill-red { background: var(--red); }
+  .cat-explanation { font-size: 14px; color: var(--mid); margin-bottom: 0.85rem; line-height: 1.65; }
+  .recs-title { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.5rem; }
+  .rec-item { display: flex; gap: 8px; font-size: 13.5px; color: var(--mid); margin-bottom: 0.4rem; line-height: 1.55; }
+  .rec-bullet { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 7px; }
+  .kw-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; }
+  .kw-section h3 { font-size: 15px; font-weight: 600; margin-bottom: 0.3rem; }
+  .kw-section > p { font-size: 13px; color: var(--muted); margin-bottom: 1.25rem; }
+  .kw-group { margin-bottom: 1.25rem; }
+  .kw-group-title { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+  .kw-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .kw-tag { display: flex; align-items: center; gap: 5px; font-size: 12.5px; padding: 3px 10px; border-radius: 20px; font-family: 'DM Mono', monospace; }
+  .kw-found { background: var(--green-bg); color: var(--green); } .kw-missing { background: var(--red-bg); color: var(--red); }
+  .rewrite-box { background: var(--bg); border-radius: var(--radius); padding: 1rem 1.25rem; margin-top: 0.75rem; }
+  .rewrite-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.35rem; }
+  .rewrite-text { font-size: 13.5px; font-style: italic; margin-left: 0.5rem; }
+  .achievement-list { list-style: none; }
+  .ach-item { display: flex; align-items: flex-start; gap: 10px; font-size: 13.5px; padding: 0.5rem 0; border-bottom: 1px solid var(--border); line-height: 1.5; }
+  .ach-item:last-child { border-bottom: none; }
+  .ach-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+  .ach-good { background: var(--green); } .ach-bad { background: var(--amber); }
+  .verb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 550px) { .verb-grid { grid-template-columns: 1fr; } }
+  .priority-list { list-style: none; }
+  .priority-item { display: grid; grid-template-columns: 32px 1fr auto; gap: 12px; align-items: start; padding: 1rem 1.25rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 0.6rem; transition: border-color 0.2s; }
+  .priority-item:hover { border-color: var(--accent); }
+  .priority-num { width: 32px; height: 32px; background: var(--dark); color: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; flex-shrink: 0; }
+  .priority-body h4 { font-size: 14px; font-weight: 500; margin-bottom: 0.2rem; }
+  .priority-body p { font-size: 13px; color: var(--muted); }
+  .priority-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .effort-tag { font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 500; white-space: nowrap; }
+  .effort-quick { background: var(--green-bg); color: var(--green); } .effort-major { background: var(--amber-bg); color: var(--amber); }
+  .score-gain { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--accent); font-weight: 500; white-space: nowrap; }
+  .results-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; margin-top: 1.5rem; }
+  .rescan-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--dark); color: #fff; border: none; border-radius: var(--radius); padding: 0 1.25rem; height: 42px; font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; transition: background 0.2s; }
+  .rescan-btn:hover { background: var(--accent); }
+  .download-btn { display: inline-flex; align-items: center; gap: 8px; background: transparent; border: 1px solid var(--border); border-radius: var(--radius); padding: 0 1.25rem; height: 42px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--mid); cursor: pointer; transition: all 0.2s; }
+  .download-btn:hover { border-color: var(--dark); color: var(--dark); }
+  #error-msg { display: none; background: var(--red-bg); border: 1px solid var(--red); color: var(--red); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem; font-size: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><span class="logo-dot"></span>RESUME SCORER<span class="header-author">@David Savino</span></div>
+</header>
+
+<div class="page">
+  <div class="hero">
+    <h1>Score your resume<br>in seconds.</h1>
+    <p>Paste your resume and a job description. Get a detailed analysis powered by a Python scoring engine.</p>
+  </div>
+
+  <div class="input-grid">
+    <div class="input-card">
+      <label>Your Resume</label>
+      <textarea id="resumeInput" placeholder="Paste the full text of your resume here...&#10;&#10;Include your work experience, skills, education, and achievements."></textarea>
+    </div>
+    <div class="input-card">
+      <label>Job Description <span style="font-weight:300;color:var(--muted)">(optional)</span></label>
+      <textarea id="jdInput" placeholder="Paste the job description here...&#10;&#10;If left blank, industry-standard keywords will be used."></textarea>
+    </div>
+  </div>
+
+  <div class="controls-row">
+    <div class="select-wrap">
+      <label>Role Type:</label>
+      <select id="industrySelect">
+        <optgroup label="── General Roles ──">
+          <option value="product">Management</option>
+          <option value="marketing">Marketing</option>
+          <option value="finance">Finance</option>
+          <option value="sales">Sales</option>
+          <option value="design">Design</option>
+          <option value="healthcare">Healthcare</option>
+          <option value="general">General / Other</option>
+        </optgroup>
+        <optgroup label="── IT / Technical Roles ──">
+          <option value="software">Software Engineering</option>
+          <option value="web_developer">Web Development</option>
+          <option value="data">Data Science</option>
+          <option value="data_engineer">Data Engineering</option>
+          <option value="ai_ml">AI / Machine Learning</option>
+          <option value="cloud_computing">Cloud &amp; DevOps</option>
+          <option value="cybersecurity">Cybersecurity</option>
+          <option value="it_helpdesk">IT &amp; Help Desk</option>
+        </optgroup>
+      </select>
+    </div>
+    <button class="analyze-btn" onclick="runAnalysis()">▶ Analyze Resume</button>
+    <button class="clear-btn" onclick="clearAll()">Clear</button>
+  </div>
+
+  <div id="error-msg"></div>
+  <div id="loading">
+    <div class="spinner"></div>
+    <div id="loading-msg">Sending to scoring engine...</div>
+  </div>
+  <div id="results"></div>
+</div>
+
+<script>
+const LOADING_MSGS = [
+  'Scanning resume structure...', 'Extracting keywords...', 'Analyzing bullet points...',
+  'Scoring achievements...', 'Evaluating action verbs...', 'Building feedback report...',
+];
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function badgeClass(s)  { return s >= 75 ? 'badge-green' : s >= 50 ? 'badge-amber' : 'badge-red'; }
+function fillClass(s)   { return s >= 75 ? 'fill-green'  : s >= 50 ? 'fill-amber'  : 'fill-red'; }
+function colorFor(s)    { return s >= 75 ? 'var(--green)' : s >= 50 ? 'var(--amber)' : 'var(--red)'; }
+
+function toggleCard(id) { document.getElementById(id).classList.toggle('open'); }
+
+async function runAnalysis() {
+  const resume   = document.getElementById('resumeInput').value.trim();
+  const jd       = document.getElementById('jdInput').value.trim();
+  const industry = document.getElementById('industrySelect').value;
+  const errEl    = document.getElementById('error-msg');
+
+  errEl.style.display = 'none';
+  if (!resume || resume.length < 50) { errEl.textContent = 'Please paste your resume (at least a few lines).'; errEl.style.display = 'block'; return; }
+
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('loading').scrollIntoView({ behavior: 'smooth' });
+
+  let mi = 0;
+  const iv = setInterval(() => {
+    document.getElementById('loading-msg').textContent = LOADING_MSGS[mi++ % LOADING_MSGS.length];
+  }, 600);
+
+  try {
+    const res = await fetch('/.netlify/functions/api', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ resume, jd, industry }),
+    });
+    clearInterval(iv);
+    document.getElementById('loading').style.display = 'none';
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      errEl.textContent = err.error || `Server error: ${res.status}`;
+      errEl.style.display = 'block';
+      return;
+    }
+
+    const data = await res.json();
+    window._lastData = data;
+    renderResults(data);
+  } catch (e) {
+    clearInterval(iv);
+    document.getElementById('loading').style.display = 'none';
+    errEl.textContent = `Network error: ${e.message}`;
+    errEl.style.display = 'block';
+  }
+}
+
+function renderResults(d) {
+  const { overall, grade, executive_summary, scores, feedbacks, priorities, rewrite_examples, verb_alternatives } = d;
+  const circ = 2 * Math.PI * 52;
+  const offset = circ - (overall / 100) * circ;
+  const color  = colorFor(overall);
+
+  const gradeLabel = { 'A+':'🏆 Outstanding', 'A':'🎯 Strong Resume', 'B':'👍 Good Resume', 'C':'⚠️ Needs Work', 'F':'🔧 Major Revisions' };
+  const miniColors = { kw:'#2D5BE3', ach:'#16A34A', verbs:'#D97706', contact:'#7C3AED', skills:'#0891B2', exp:'#DC2626', edu:'#059669', fmt:'#6B7280' };
+
+  const cats = [
+    { key:'kw',      name:'Keyword Match',          weight:'25%', icon:'🔍' },
+    { key:'ach',     name:'Quantified Achievements', weight:'15%', icon:'📊' },
+    { key:'verbs',   name:'Action Verb Usage',       weight:'10%', icon:'⚡' },
+    { key:'contact', name:'Contact & Header',        weight:'10%', icon:'👤' },
+    { key:'skills',  name:'Skills Section',          weight:'15%', icon:'🛠' },
+    { key:'exp',     name:'Work Experience Clarity', weight:'15%', icon:'💼' },
+    { key:'edu',     name:'Education & Certs',       weight:'5%',  icon:'🎓' },
+    { key:'fmt',     name:'Formatting',              weight:'5%',  icon:'📄' },
+  ];
+
+  const catCards = cats.map(c => {
+    const s = scores[c.key].score;
+    const f = feedbacks[c.key];
+    const iconBg = s >= 75 ? 'var(--green-bg)' : s >= 50 ? 'var(--amber-bg)' : 'var(--red-bg)';
+    const recs = (f.recs || []).map(r => `<div class="rec-item"><span class="rec-bullet"></span><span>${escHtml(r)}</span></div>`).join('');
+    return `
+      <div class="cat-card" id="card-${c.key}">
+        <div class="cat-header" onclick="toggleCard('card-${c.key}')">
+          <div class="cat-header-left">
+            <div class="cat-icon" style="background:${iconBg}">${c.icon}</div>
+            <div><div class="cat-name">${c.name}</div><div class="cat-weight">Weight: ${c.weight}</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="score-badge ${badgeClass(s)}">${s}/100</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="cat-body">
+          <div class="cat-score-bar"><div class="cat-score-bar-fill ${fillClass(s)}" style="width:${s}%"></div></div>
+          <p class="cat-explanation">${escHtml(f.explanation)}</p>
+          <div class="recs-title">Recommendations</div>${recs}
+        </div>
+      </div>`;
+  }).join('');
+
+  const kwFound   = (scores.kw.found   || []).slice(0,25).map(k => `<span class="kw-tag kw-found">✓ ${escHtml(k)}</span>`).join('');
+  const kwMissing = (scores.kw.missing || []).slice(0,25).map(k => `<span class="kw-tag kw-missing">✗ ${escHtml(k)}</span>`).join('');
+
+  const achItems = [
+    ...(scores.ach.quantified || []).slice(0,4).map(b => `<li class="ach-item"><span class="ach-dot ach-good"></span><span style="color:var(--green)">${escHtml(b.slice(0,130))}</span></li>`),
+    ...(scores.ach.vague      || []).slice(0,4).map(b => `<li class="ach-item"><span class="ach-dot ach-bad"></span><span>${escHtml(b.slice(0,130))}<span style="font-size:11px;color:var(--amber);margin-left:6px;font-family:'DM Mono',monospace">→ needs a number</span></span></li>`),
+  ].join('');
+
+  const rewrites = (rewrite_examples || []).slice(0,2).map(r => `
+    <div class="rewrite-box">
+      <div class="rewrite-label" style="color:var(--red)">✗ Weak</div>
+      <div class="rewrite-text" style="color:var(--red);margin-bottom:6px">"${escHtml(r.before)}"</div>
+      <div class="rewrite-label" style="color:var(--green)">✓ Strong</div>
+      <div class="rewrite-text" style="color:var(--green)">"${escHtml(r.after)}"</div>
+    </div>`).join('');
+
+  const verbAlts = Object.entries(verb_alternatives || {}).map(([cat, verbs]) => `
+    <div>
+      <div class="recs-title">${escHtml(cat)}</div>
+      <div class="kw-tags">${verbs.map(v => `<span class="kw-tag" style="background:var(--accent-light);color:var(--accent)">${escHtml(v)}</span>`).join('')}</div>
+    </div>`).join('');
+
+  const prioHTML = (priorities || []).map(p => `
+    <li class="priority-item">
+      <div class="priority-num">${p.rank}</div>
+      <div class="priority-body"><h4>${escHtml(p.label)}</h4><p>${escHtml(p.detail)}</p></div>
+      <div class="priority-meta">
+        <span class="effort-tag ${p.effort === 'quick' ? 'effort-quick' : 'effort-major'}">${p.effort === 'quick' ? 'Quick Win' : 'Major Effort'}</span>
+        <span class="score-gain">+${p.gain} pts</span>
+      </div>
+    </li>`).join('');
+
+  const html = `
+    <div class="dashboard">
+      <div class="score-circle-wrap">
+        <svg viewBox="0 0 120 120" width="130" height="130">
+          <circle class="score-circle-track" cx="60" cy="60" r="52"/>
+          <circle class="score-circle-fill" cx="60" cy="60" r="52" stroke="${color}"
+            stroke-dasharray="${circ.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}"/>
+        </svg>
+        <div class="score-circle-text">
+          <div class="score-number" style="color:${color}">${overall}</div>
+          <div class="score-label">Grade ${grade}</div>
+        </div>
+      </div>
+      <div class="dashboard-right">
+        <h2>${gradeLabel[grade] || 'Resume Scored'}</h2>
+        <p>${escHtml(executive_summary)}</p>
+        <div class="mini-bars">
+          ${cats.map(c => `
+            <div class="mini-bar-item">
+              <div class="mini-bar"><div class="mini-bar-fill" style="width:${scores[c.key].score}%;background:${miniColors[c.key]}"></div></div>
+              <span>${c.name.split(' ')[0]}</span>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">Category Breakdown</div>
+    <div class="categories-grid">${catCards}</div>
+
+    <div class="section-title">Keyword Analysis</div>
+    <div class="kw-section">
+      <h3>Keywords Found vs. Missing</h3>
+      <p>Based on your selected role type${document.getElementById('jdInput').value.trim().length > 100 ? ' and job description provided' : ' — add a job description for more precise matching'}.</p>
+      ${kwFound   ? `<div class="kw-group"><div class="kw-group-title">✓ Present (${scores.kw.found.length})</div><div class="kw-tags">${kwFound}</div></div>` : ''}
+      ${kwMissing ? `<div class="kw-group"><div class="kw-group-title">✗ Missing (${scores.kw.missing.length})</div><div class="kw-tags">${kwMissing}</div></div>` : ''}
+    </div>
+
+    <div class="section-title">Achievement Analysis</div>
+    <div class="kw-section">
+      <h3>Bullet Point Quality</h3>
+      <p><span style="color:var(--green)">Green</span> = quantified. <span style="color:var(--amber)">Amber</span> = vague, needs a number.</p>
+      ${achItems ? `<ul class="achievement-list">${achItems}</ul>` : '<p style="color:var(--muted);font-size:14px">No bullet points detected. Use — or • to start bullets.</p>'}
+      <div style="margin-top:1rem"><div class="recs-title">Example Rewrites</div>${rewrites}</div>
+    </div>
+
+    <div class="section-title">Action Verb Bank</div>
+    <div class="kw-section">
+      <h3>Power Verbs by Category</h3>
+      <p>Replace weak or repeated verbs with these high-impact alternatives.</p>
+      <div class="verb-grid">${verbAlts}</div>
+      ${(scores.verbs.repeated||[]).length ? `
+        <div style="margin-top:1rem;padding:0.75rem 1rem;background:var(--amber-bg);border-radius:var(--radius);border:1px solid rgba(217,119,6,0.3)">
+          <div class="recs-title" style="color:var(--amber)">⚠ Repeated verbs detected</div>
+          <p style="font-size:13px;color:var(--amber)">${scores.verbs.repeated.join(' · ')}</p>
+        </div>` : ''}
+    </div>
+
+    <div class="section-title">Top 5 Priority Improvements</div>
+    <ul class="priority-list">${prioHTML}</ul>
+
+    <div class="results-actions">
+      <button class="rescan-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑ Edit & Re-analyze</button>
+      <button class="download-btn" onclick="downloadReport()">↓ Download Report</button>
+    </div>`;
+
+  const el = document.getElementById('results');
+  el.innerHTML = html;
+  el.style.display = 'block';
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function downloadReport() {
+  const d = window._lastData;
+  if (!d) return;
+  const lines = [
+    'RESUME SCORE REPORT', '===================',
+    `Overall Score: ${d.overall}/100 — Grade: ${d.grade}`, '',
+    'CATEGORY SCORES',
+    ...Object.entries(d.scores).map(([k, v]) => `${k.padEnd(10)}: ${v.score}/100`),
+    '', 'MISSING KEYWORDS', (d.scores.kw.missing || []).slice(0,20).join(', '),
+    '', 'FOUND KEYWORDS',   (d.scores.kw.found   || []).slice(0,20).join(', '),
+    '', '---', 'Generated by Resume Scorer',
+  ];
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'resume-score-report.txt';
+  a.click();
+}
+
+function clearAll() {
+  document.getElementById('resumeInput').value = '';
+  document.getElementById('jdInput').value = '';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('error-msg').style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
